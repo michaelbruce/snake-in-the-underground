@@ -1,47 +1,33 @@
-(ns snake-in-the-underground.core
-  (:require [quil.core :as q]
-            [quil.middleware :as m]))
+(ns snake-in-the-underground.core)
 
-(defn setup []
-  ; Set frame rate to 30 frames per second.
-  (q/frame-rate 30)
-  ; Set color mode to HSB (HSV) instead of default RGB.
-  (q/color-mode :hsb)
-  ; setup function returns initial state. It contains
-  ; circle color and position.
-  {:color 0
-   :angle 0})
+(def app-state (atom {:apple-position [4 3]
+                      :snake-position [[1 0]
+                                       [1 1]]}))
 
-(defn update-state [state]
-  ; Update sketch state by changing circle color and position.
-  {:color (mod (+ (:color state) 0.7) 255)
-   :angle (+ (:angle state) 0.1)})
+(defn add-thing [row thing-position character]
+  (assoc row thing-position character))
 
-(defn draw-state [state]
-  ; Clear the sketch by filling it with light-grey color.
-  (q/background 240)
-  ; Set circle color.
-  (q/fill (:color state) 255 255)
-  ; Calculate x and y coordinates of the circle.
-  (let [angle (:angle state)
-        x (* 150 (q/cos angle))
-        y (* 150 (q/sin angle))]
-    ; Move origin point to the center of the sketch.
-    (q/with-translation [(/ (q/width) 2)
-                         (/ (q/height) 2)]
-      ; Draw the circle.
-      (q/ellipse x y 100 100))))
+(def board (atom [[ \. \. \. \. \. \. \. \. \. \.],
+                  [ \. \. \. \. \. \. \. \. \. \.],
+                  [ \. \. \. \. \. \. \. \. \. \.],
+                  [ \. \. \. \. \. \. \. \. \. \.],
+                  [ \. \. \. \. \. \. \. \. \. \.],
+                  [ \. \. \. \. \. \. \. \. \. \.],
+                  [ \. \. \. \. \. \. \. \. \. \.],
+                  [ \. \. \. \. \. \. \. \. \. \.],
+                  [ \. \. \. \. \. \. \. \. \. \.],
+                  [ \. \. \. \. \. \. \. \. \. \.]]))
 
-(q/defsketch snake-in-the-underground
-  :title "You spin my circle right round"
-  :size [500 500]
-  ; setup function called only once, during sketch initialization.
-  :setup setup
-  ; update-state is called on each iteration before draw-state.
-  :update update-state
-  :draw draw-state
-  :features [:keep-on-top]
-  ; This sketch uses functional-mode middleware.
-  ; Check quil wiki for more info about middlewares and particularly
-  ; fun-mode.
-  :middleware [m/fun-mode])
+(defn snakes-for-row-y [all-snake-parts-in-game row-number]
+  (filter #(= row-number (second %)) all-snake-parts-in-game))
+
+(defn handle-row [index row]
+  (let [apple-row-number (second
+                          (:apple-position @app-state))]
+    (map add-thing index (snakes-for-row-y (:snake-position @app-state) index)
+    (if (= index apple-row-number)
+      (add-thing row (first (:apple-position @app-state)) \A)
+      row)))
+
+(map-indexed (comp println handle-row)
+             @board)
